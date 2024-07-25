@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 import os
 
+from fastapi import HTTPException, Request
 from weather_service.db_utils import insert_realtime_weather
 
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
@@ -65,6 +66,7 @@ def cron_job_perform_aggregation():
     pass
 
 import requests
+import hashlib
 
 def fetch_weather_data(api_url, city):
     response = requests.get(f"{api_url}?q={city}&appid={OPENWEATHER_API_KEY}")
@@ -96,3 +98,38 @@ def insert_fetched_data(api_url, api_key, city):
         )
     except Exception as e:
         print(f"Failed to insert data for {city}: {e}")
+
+def hash_password(password):
+    """
+    Hashes the given password using SHA-256 algorithm
+    """
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+    return hashed_password
+
+request_counts = {}
+def rate_limit(limit: int, interval: int):
+    def decorator(func):
+        async def wrapper(request: Request, *args, **kwargs):
+            # Get the client IP address
+            client_ip = request.client.host
+
+            # Check if the IP is already in the dictionary
+            if client_ip in request_counts:
+                # Increment the request count for the IP
+                request_counts[client_ip] += 1
+            else:
+                # Add the IP to the dictionary with initial count 1
+                request_counts[client_ip] = 1
+
+            # Check if the request count exceeds the limit
+            if request_counts[client_ip] > limit:
+                raise HTTPException(status_code=429, detail="Too many requests")
+
+            # Call the actual endpoint function
+            response = await func(request, *args, **kwargs)
+
+            return response
+
+        return wrapper
+
+    return decorator

@@ -42,10 +42,10 @@ def insert_daily_weather(date, avg_temp, max_temp, min_temp, dom_condition):
     session.add(new_data)
     session.commit()
 
-def insert_user(name, email):
+def insert_user(email, password):
     new_user = User(
-        name=name,
-        email=email
+        email=email,
+        password=password,
     )
     session.add(new_user)
     session.commit()
@@ -111,3 +111,22 @@ def aggregate_daily_weather():
         session.merge(daily_weather)
     
     session.commit()
+
+def is_user_registered(user_id):
+    user = session.query(User).filter(User.id == user_id).first()
+    return user is not None
+
+def check_password(email, hashed_password):
+    user = session.query(User).filter(User.email == email, User.password == hashed_password).first()
+    return user is not None
+
+def get_user_id_from_email(email):
+    user = session.query(User).filter(User.email == email).first()
+    if user:
+        return user.id
+    else:
+        return None
+    
+def get_alerts_for_user(user_id):
+    alerts = session.query(AlertEvent).filter(AlertEvent.user_id == user_id).all()
+    return alerts
