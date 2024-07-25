@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine, Column, String, Date, Numeric, Boolean, ForeignKey, UniqueConstraint, Table, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base

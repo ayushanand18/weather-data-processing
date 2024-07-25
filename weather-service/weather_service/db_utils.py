@@ -1,4 +1,6 @@
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import func
+import datetime
 
 from weather_service.db_models import engine, RealtimeWeather, DailyWeather, User, UserAlert, AlertEvent
 

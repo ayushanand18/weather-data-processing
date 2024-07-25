@@ -2,8 +2,13 @@
 API Contracts,
 """
 
-from fastapi import FastAPI, Request
+import os
 from apscheduler.schedulers.background import BackgroundScheduler
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+
+from weather_service.db_utils import aggregate_daily_weather
+from weather_service.utils import fetch_weather_data
 
 
 app = FastAPI()
@@ -13,8 +18,6 @@ scheduler = BackgroundScheduler()
 
 CITIES = ['Delhi', 'Mumbai', 'Chennai', 'Bangalore', 'Kolkata', 'Hyderabad']
 API_URL = 'https://api.openweathermap.org/data/2.5/weather'
-API_KEY = os.getenv('OPENWEATHER_API_KEY')
-
 
 @scheduler.scheduled_job('cron', hour=0, minute=1)
 def scheduled_job():
@@ -29,15 +32,19 @@ def fetch_and_insert_data():
         except Exception as e:
             print(f"Failed to insert data for {city}: {e}")
         
-scheduler.start()
 
-@app.on_event("shutdown")
-def shutdown_event():
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle Server Wake-up and shutdown"""
+    scheduler.start()
+
+    yield
+
     scheduler.shutdown()
 
-
 @app.get("/statistics")
-async def statistics_combined_historical_and_realtime(request: Request) :
+async def statistics_combined_historical_and_realtime() :
     """
     Render Dashboard to view visualizations (combined).
     """
@@ -47,7 +54,7 @@ async def statistics_combined_historical_and_realtime(request: Request) :
     pass
 
 @app.get("/statistics/realtime")
-async def statistics_realtime(request: Request) :
+async def statistics_realtime() :
     """
     Render Dashboard to view visualizations (historical).
     """
@@ -57,7 +64,7 @@ async def statistics_realtime(request: Request) :
     pass
 
 @app.get("/statistics/historical")
-async def statistics_historical(request: Request) :
+async def statistics_historical() :
     """
     Render Dashboard to view visualizations (realtime).
     """

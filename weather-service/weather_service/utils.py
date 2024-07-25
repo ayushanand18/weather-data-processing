@@ -2,6 +2,29 @@
 Utility functions used by the API
 """
 
+from datetime import datetime, timedelta
+from functools import wraps
+import os
+
+from weather_service.db_utils import insert_realtime_weather
+
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
+
+def cache_with_timeout(timeout):
+    def decorator(func):
+        cache = {}
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            key = (args, tuple(kwargs.items()))
+            if key in cache and datetime.now() - cache[key]['timestamp'] < timedelta(seconds=timeout):
+                return cache[key]['value']
+            else:
+                result = func(*args, **kwargs)
+                cache[key] = {'value': result, 'timestamp': datetime.utcnow()}
+                return result
+        return wrapper
+    return decorator
+
 @cache_with_timeout('1 day')
 def fetch_aggregate_data_from_db():
     """
