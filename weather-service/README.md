@@ -56,3 +56,10 @@ field  | str      | NOT NULL
 threshold | number| NOT NULL
 disabled | boolean| NOT NULL, DEFAULT true
 
+## API Design
+* GET /alerts/json/?access_token=jwt - alerts for a user in json 
+* GET /alerts/html/?access_token=jwt - alerts for a user in html table
+* GET /statistics - visualization for data (realtime + historical)
+* GET /statistics/realtime - realtime data visualization only
+* GET /statistics/historical - historical data visualization only
+* GET /login - login to the application, it'll return an access token on success
