@@ -13,6 +13,7 @@ fastapi = "^0.111.1"
 dash = "^2.17.1"
 pandas = "^2.2.2"
 pyjwt = "^2.8.0"
+psycopg2 = "^2.9.9"
 
 
 [build-system]

@@ -1,49 +1,56 @@
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+from dash import dcc
+from dash import html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 
 from weather_service.db_utils import get_historical_data, get_realtime_data
 
-app = dash.Dash(__name__)
+app = dash.Dash(
+    __name__,
+    requests_pathname_prefix='/statistics/'
+)
 
-def plot_data(data):
-    # Create a line chart using the data
-    # You can use any plotting library of your choice, such as Plotly or Matplotlib
-    # Here's an example using Plotly:
-    fig = px.line(data, x='date', y='value')
+def plot_data(data, col):
+    fig = px.bar(data, x='dt', y=col, color='city', barmode='group',
+             title='Temperature vs Date for Different Cities',
+             labels={'temp': 'Temperature', 'dt': 'Date'})
+    
     return dcc.Graph(figure=fig)
 
 @app.callback(Output('historical-chart', 'children'), [Input('refresh-button', 'n_clicks')])
 def update_historical_chart(n_clicks):
     # Retrieve historical data from the database using db_utils.py
-    historical_data = get_historical_data()
+    historical_data = pd.DataFrame(eval(get_historical_data()))
     return plot_data(historical_data)
 
 @app.callback(Output('realtime-chart', 'children'), [Input('refresh-button', 'n_clicks')])
 def update_realtime_chart(n_clicks):
     # Retrieve realtime data from the database using db_utils.py
-    realtime_data = get_realtime_data()
-    return plot_data(realtime_data)
+    realtime_data = pd.DataFrame(eval(get_realtime_data()))
+    realtime_data['dt'] = realtime_data['dt'].astype('category')
+    return plot_data(realtime_data, 'temp')
 
-def combine_charts():
-    # Retrieve both historical and realtime data
-    historical_data = get_historical_data()
-    realtime_data = get_realtime_data()
+def plot_realtime_data():
+    realtime_data = pd.DataFrame(eval(get_realtime_data()))
+    realtime_data['dt'] = realtime_data['dt'].astype('category')
 
-    # Combine the data into a single dataframe or plot
-    combined_data = pd.concat([historical_data, realtime_data])
+    return plot_data(realtime_data, 'temp')
 
-    return plot_data(combined_data)
+def plot_historical_data():
+    data = get_historical_data()
+    df = pd.DataFrame(eval(data))
+    return [html.Div([
+        html.H2("Temperature vs Time"),
+        plot_data(df, 'temp')
+    ])]
 
 app.layout = html.Div([
-    html.H1("Weather Data Processing"),
+    html.H1("Weather Data Historical and Realtime"),
     html.Button('Refresh Data', id='refresh-button', n_clicks=0),
-    html.Div(id='historical-chart'),
-    html.Div(id='realtime-chart'),
-    html.Div(combine_charts())
+    html.Div(id='realtime-chart', title="Realtime Weather Data", children=plot_realtime_data()),
+    # html.Div(id='historical-chart', children=plot_historical_data()),
 ])
 
 if __name__ == '__main__':

@@ -1,9 +1,11 @@
 import os
-from sqlalchemy import create_engine, Column, String, Date, Numeric, Boolean, ForeignKey, UniqueConstraint, Table, TIMESTAMP
+from sqlalchemy import create_engine, Column, String, Date, Numeric, Boolean, ForeignKey, UniqueConstraint, Table, TIMESTAMP, inspect, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Fetching database connection details from environment variables
 DB_USER = os.getenv('DB_USER', 'default_user')
@@ -17,13 +19,16 @@ Base = declarative_base()
 class RealtimeWeather(Base):
     __tablename__ = 'realtime_weather'
     
-    dt = Column(TIMESTAMP, unique=True, nullable=False, primary_key=True)
-    city = Column(String, nullable=False, primary_key=True)
-    rain = Column(Numeric, nullable=False)
-    snow = Column(Numeric, nullable=False)
-    clear = Column(Numeric, nullable=False)
+    dt = Column(TIMESTAMP, nullable=False, primary_key=True)
+    main_condition = Column(String, nullable=False)
     temp = Column(Numeric, nullable=False)
     feels_like = Column(Numeric, nullable=False)
+    pressure = Column(Numeric, nullable=False)
+    humidity = Column(Numeric, nullable=False)
+    rain = Column(Numeric, nullable=False)
+    clouds = Column(Numeric, nullable=False)
+    city = Column(String, nullable=False, primary_key=True)
+
 
 class DailyWeather(Base):
     __tablename__ = 'daily_weather'
@@ -36,34 +41,17 @@ class DailyWeather(Base):
     dom_condition = Column(String, nullable=False)
 
 
-class User(Base):
-    __tablename__ = 'users'
-    
-    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    email = Column(String, nullable=False)
-    password = Column(String, nullable=False)
-
-class UserAlert(Base):
-    __tablename__ = 'user_alerts'
-    
-    alert_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id'), nullable=False)
-    field = Column(String, nullable=False)
-    threshold = Column(Numeric, nullable=False)
-    disabled = Column(Boolean, nullable=False, default=True)
-
 class AlertEvent(Base):
     __tablename__ = 'alert_events'
     
     event_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dt = Column(TIMESTAMP, unique=True, nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.user_id'), nullable=False)
+    dt = Column(TIMESTAMP, nullable=False)
+    city=Column(String, nullable=False)
     reason = Column(String, nullable=False)
-    alert_id = Column(UUID(as_uuid=True), ForeignKey('user_alerts.alert_id'), nullable=False)
+    trigger = Column(String, nullable=False)
 
 # Create an engine
 DATABASE_URL = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
 engine = create_engine(DATABASE_URL)
 
-# Create all tables
 Base.metadata.create_all(engine)
