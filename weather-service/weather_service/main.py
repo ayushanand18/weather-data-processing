@@ -12,10 +12,12 @@ import logging
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.wsgi import WSGIMiddleware
 from weather_service.db_utils import aggregate_daily_weather, get_alerts
-from weather_service.utils import check_data_against_alerts, fetch_weather_data, insert_fetched_data, rate_limit
+from weather_service.utils import check_data_against_alerts, fetch_weather_data, insert_fetched_data, rate_limit, thresholds
 from fastapi import HTTPException
 from dotenv import load_dotenv
-from weather_service.dash_app import app as dash_app
+from weather_service.dash_app_statistics import app as dash_app_statistics
+from weather_service.dash_app_threshold import app as dash_app_threshold
+from weather_service.dash_app_alerts import app as dash_app_alerts
 
 load_dotenv()
 logging.basicConfig(format='%(asctime)s %(user)-8s %(message)s')
@@ -27,14 +29,8 @@ scheduler = AsyncIOScheduler()
 CITIES = ['Delhi', 'Mumbai', 'Chennai', 'Bangalore', 'Kolkata', 'Hyderabad']
 API_URL = 'https://api.openweathermap.org/data/2.5/weather'
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
-THRESHOLDS = {
-    'temp': [0, 100],
-    'feels_like': [0, 100],
-    'pressure': [0, 1000],
-    'humidity': [0, 100],
-    'rain': [0, 100],
-    'clouds': [0, 100],
-}
+
+
 
 def scheduled_job():
     aggregate_daily_weather()
@@ -46,14 +42,14 @@ async def fetch_and_insert_data():
             
             weather_data = await fetch_weather_data(API_URL, OPENWEATHER_API_KEY, city)
             await insert_fetched_data(weather_data)
-            await check_data_against_alerts(weather_data, THRESHOLDS)
+            await check_data_against_alerts(weather_data, thresholds.get_thresholds())
             print("Fetching data")
         except Exception as e:
             print(f"Failed to insert data for {city}: {e}")
         
 
 scheduler.add_job(aggregate_daily_weather, 'cron', hour=0, minute=1)
-scheduler.add_job(fetch_and_insert_data, IntervalTrigger(seconds=300))
+scheduler.add_job(fetch_and_insert_data, IntervalTrigger(seconds=30))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,7 +66,9 @@ app = FastAPI(lifespan=lifespan)
 # API Endpoints
 
 
-app.mount("/statistics", WSGIMiddleware(dash_app.server))
+app.mount("/statistics", WSGIMiddleware(dash_app_statistics.server))
+app.mount("/configs", WSGIMiddleware(dash_app_threshold.server))
+app.mount("/alerts", WSGIMiddleware(dash_app_alerts.server))
 
 @app.get("/")
 @rate_limit(limit=5, interval=60)

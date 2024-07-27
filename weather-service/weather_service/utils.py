@@ -188,3 +188,32 @@ def check_data_against_alerts(weather_data, thresholds):
     if weather_data['clouds'] < thresholds['clouds'][0] or weather_data['clouds'] > thresholds['clouds'][1]:
         insert_alert_event(weather_data['dt'], weather_data['city'], 'Clouds', f'Found clouds: {weather_data["clouds"]} but threshold is {thresholds["clouds"]}')
         print(f"Clouds threshold exceeded for {weather_data['city']}")
+
+class Thresholds:
+    def __init__(self, temp, feels_like, pressure, humidity, rain, clouds):
+        self.temp = temp
+        self.feels_like = feels_like
+        self.pressure = pressure
+        self.humidity = humidity
+        self.rain = rain
+        self.clouds = clouds
+    
+    def get_thresholds(self):
+        return {
+            'temp': self.temp,
+            'feels_like': self.feels_like,
+            'pressure': self.pressure,
+            'humidity': self.humidity,
+            'rain': self.rain,
+            'clouds': self.clouds,
+        }
+    
+    def update_thresholds(self, temp, feels_like, pressure, humidity, rain, clouds):
+        self.temp = temp
+        self.feels_like = feels_like 
+        self.pressure = pressure 
+        self.humidity = humidity
+        self.rain = rain
+        self.clouds = clouds
+
+thresholds = Thresholds(temp=[0, 100], feels_like=[0, 100], pressure=[0, 1000], humidity=[0, 100], rain=[0, 100], clouds=[0, 100])
