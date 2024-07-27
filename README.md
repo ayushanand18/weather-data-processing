@@ -53,15 +53,17 @@ your machine without Docker.
 
     Then continue to create a venv, and install dependencies
     ```bash
-    
+    cd weather-service/
+    poetry install
     ```
 
 + Database
 
     After a `poetry install`, execute the following to setup raw data in your 
     postgres instance. Make sure to populate the connection creds in the `.env`.
+    Run the database first, if using manual methods
     ```bash
-    poetry run python main.py --migrate
+    docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
     ```
 
 ### How to run
@@ -73,8 +75,19 @@ Expecting that above installation process, suceeded.
     ```
 + Database
     ```bash
-    poetry run python main.py --db-start
+    docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
     ```
+
+or you can just run the `Dockerfile` to build the system and run it in a container
+
+```bash
+cd weather-service/
+docker build -t weather_service_image .
+docker run --name weather_service_container -d -p 8000:8000 weather_service_image
+
+# Check the logs to ensure everything is running smoothly
+docker logs -f weather_service_container
+```
 
 ## About Solution
 ### Solution Overview
