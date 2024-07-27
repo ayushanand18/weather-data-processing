@@ -188,9 +188,19 @@ Tables
 * GET /configs/ - Retrieve and Update Thresholds Configurations
 
 ## Non Technical Parts
+Although most of the things have been dicussed under technical section, this section sort of 
+talks about how I approched the problem.
+
 ### My Approach
+When I first saw the problem, the first question in my mind was the overall system design.
+But realised it's not a system design question but had to implement the APIs serving the
+requests. I would still go for the ideal way I would have designed such a system in an 
+interview, although I didn't get the time to implement it.
+
 ### Feedback
+The assignment was a bit lengthy, it has many tricky parts which are easier said than done.
+The availability gaurantee, redundancy mechanism, caching for efficient reads, couldn't be 
+addressed in such a short span of time.
 
 ## Outro
-
 Thanks.
