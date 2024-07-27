@@ -1,5 +1,4 @@
-# Application 2 : Real-Time Data Processing System for Weather Monitoring with
-# Rollups and Aggregates
+# Application 2 : Real-Time Data Processing System for Weather Monitoring with Rollups and Aggregates
 
 
 ## Applicant Introduction
@@ -196,6 +195,7 @@ When I first saw the problem, the first question in my mind was the overall syst
 But realised it's not a system design question but had to implement the APIs serving the
 requests. I would still go for the ideal way I would have designed such a system in an 
 interview, although I didn't get the time to implement it.
+![image](https://github.com/user-attachments/assets/59399479-e848-46fd-a949-3c0f04541e31)
 
 ### Feedback
 The assignment was a bit lengthy, it has many tricky parts which are easier said than done.
