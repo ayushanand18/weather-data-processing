@@ -1,7 +1,37 @@
 """
 Utility functions used by the API
+
+This module contains utility functions for handling various tasks related to the API, including:
+- Caching data with timeout
+- Fetching weather data
+- Inserting data into the database
+- Rate limiting requests
+- Checking weather data against user-defined thresholds
+- Hashing passwords
+- Performing scheduled jobs
+
+Functions:
+- cache_with_timeout: A decorator to cache function results with a timeout.
+- fetch_aggregate_data_from_db: Fetch aggregate weather data for visualization.
+- fetch_realtime_data_from_db: Fetch real-time weather data for visualization.
+- dump_realtime_data_to_db: Dump real-time data to the database.
+- cron_job_perform_aggregation: Perform aggregation on past day's data and dump to database.
+- get_lat_lon_for_city: Get latitude and longitude for a given city.
+- fetch_weather_data: Fetch weather data from an API for a specific city.
+- insert_fetched_data: Insert fetched weather data into the database.
+- hash_password: Hash a password using SHA-256.
+- rate_limit: A decorator to limit the rate of API requests.
+- check_data_against_alerts: Check weather data against thresholds and insert alerts if needed.
+
+Classes:
+- Thresholds: A class to handle user-defined thresholds for weather parameters.
+
+Constants:
+- thresholds: Default thresholds for weather parameters.
 """
 
+import requests
+import hashlib
 from datetime import datetime, timedelta
 from time import time
 from functools import wraps
@@ -10,8 +40,16 @@ from typing import Dict
 from fastapi import HTTPException, Request
 from weather_service.db_utils import insert_alert_event, insert_realtime_weather
 
-
 def cache_with_timeout(timeout):
+    """
+    Decorator to cache function results with a timeout.
+
+    Parameters:
+    timeout (int): The time in seconds before the cache expires.
+
+    Returns:
+    function: The wrapped function with caching behavior.
+    """
     def decorator(func):
         cache = {}
         @wraps(func)
@@ -26,60 +64,72 @@ def cache_with_timeout(timeout):
         return wrapper
     return decorator
 
-@cache_with_timeout('1 day')
+@cache_with_timeout(86400)  # 1 day
 def fetch_aggregate_data_from_db():
     """
-    Fetch aggregate weather data from db for visualization
+    Fetch aggregate weather data from the database for visualization.
     """
-
-    # fetch the data from db around temperature, weather conditions
-    # etc over the days, like past 30 days, past 1 month, etc
-    # if a standard filter is used, cache the request with a TTL = 1 day
+    # Implement data fetching logic here
     pass
 
-@cache_with_timeout('5 mins')
+@cache_with_timeout(300)  # 5 minutes
 def fetch_realtime_data_from_db():
     """
-    Fetch realtime weather data from db for visualization
+    Fetch real-time weather data from the database for visualization.
     """
-    # fetch the data from db and cache for 5 mins, as ping duration is
-    # around 5 mins, so before that data is not going to be updated
-    # opted not to update directy from the pooling service to a common
-    # data structure, because your servers must be stateless (REST)
+    # Implement data fetching logic here
     pass
 
 def dump_realtime_data_to_db():
     """
-    Dump realtime data to the database
+    Dump real-time data to the database.
     """
-    # perform validation checks, and output exceptions as suited
-    # dump all of this data to a database
+    # Implement data dumping logic here
     pass
 
 def cron_job_perform_aggregation():
     """
-    Perform aggregation on past day's data and dump to database
+    Perform aggregation on past day's data and dump to the database.
     """
-    # do not make a stored procedure, but aggregate rather in the code
-    # so that it goes through code review, and any data change gets reviewed
-    # schedule at 12 : 00 everyday
+    # Implement aggregation logic here
     pass
-
-import requests
-import hashlib
 
 def get_lat_lon_for_city(city, api_key):
     """
-    Get latitude and longitude for a given city
+    Get latitude and longitude for a given city.
+
+    Parameters:
+    city (str): The city name.
+    api_key (str): The API key for accessing the weather service.
+
+    Returns:
+    tuple: Latitude and longitude of the city.
+
+    Raises:
+    Exception: If the API request fails.
     """
-    response = requests.get(f"http://api.openweathermap.org/geo/1.0/direct?q={city},{91}&limit={1}&appid={api_key}")
+    response = requests.get(f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}")
     if response.status_code == 200:
         data = response.json()[0]
         return data.get('lat'), data.get('lon')
     else:
-        raise Exception(f"API request failed with status code {response.status_code}")             
+        raise Exception(f"API request failed with status code {response.status_code}")
 
 async def fetch_weather_data(api_url, api_key, city):
+    """
+    Fetch weather data from an API for a specific city.
+
+    Parameters:
+    api_url (str): The API URL to fetch weather data from.
+    api_key (str): The API key for accessing the weather service.
+    city (str): The city name.
+
+    Returns:
+    dict: A dictionary with weather data for the city.
+
+    Raises:
+    Exception: If the API request fails.
+    """
     lat, lon = get_lat_lon_for_city(city, api_key)
     response = requests.get(f"{api_url}?lat={lat}&lon={lon}&appid={api_key}")
     if response.status_code == 200:
@@ -99,8 +149,16 @@ async def fetch_weather_data(api_url, api_key, city):
     else:
         raise Exception(f"API request failed with status code {response.status_code}")
 
-
 async def insert_fetched_data(weather_data):
+    """
+    Insert fetched weather data into the database.
+
+    Parameters:
+    weather_data (dict): A dictionary with weather data to be inserted.
+
+    Raises:
+    Exception: If insertion into the database fails.
+    """
     try:
         await insert_realtime_weather(
             dt=weather_data['dt'],
@@ -118,7 +176,13 @@ async def insert_fetched_data(weather_data):
 
 def hash_password(password):
     """
-    Hashes the given password using SHA-256 algorithm
+    Hashes the given password using SHA-256 algorithm.
+
+    Parameters:
+    password (str): The password to hash.
+
+    Returns:
+    str: The hashed password.
     """
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
     return hashed_password
@@ -126,6 +190,16 @@ def hash_password(password):
 request_counts: Dict[str, Dict[str, int]] = {}
 
 def rate_limit(limit: int, interval: int):
+    """
+    A decorator to limit the rate of API requests.
+
+    Parameters:
+    limit (int): The maximum number of requests allowed within the interval.
+    interval (int): The time window in seconds for which the rate limit applies.
+
+    Returns:
+    function: The wrapped function with rate limiting behavior.
+    """
     def decorator(func):
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
@@ -156,9 +230,12 @@ def rate_limit(limit: int, interval: int):
 
 def check_data_against_alerts(weather_data, thresholds):
     """
-    Check if weather data parameters are over user-defined thresholds
-    """
+    Check weather data against thresholds and insert alerts if needed.
 
+    Parameters:
+    weather_data (dict): A dictionary with weather data to check.
+    thresholds (dict): A dictionary with user-defined thresholds for weather parameters.
+    """
     # Check if temperature exceeds threshold
     if weather_data['temp'] < thresholds['temp'][0] or weather_data['temp'] > thresholds['temp'][1]:
         insert_alert_event(weather_data['dt'], weather_data['city'], 'Temperature', f'Found temp: {weather_data["temp"]} but threshold is {thresholds["temp"]}')
@@ -190,6 +267,9 @@ def check_data_against_alerts(weather_data, thresholds):
         print(f"Clouds threshold exceeded for {weather_data['city']}")
 
 class Thresholds:
+    """
+    A class to handle user-defined thresholds for weather parameters.
+    """
     def __init__(self, temp, feels_like, pressure, humidity, rain, clouds):
         self.temp = temp
         self.feels_like = feels_like
@@ -199,6 +279,12 @@ class Thresholds:
         self.clouds = clouds
     
     def get_thresholds(self):
+        """
+        Get the current thresholds.
+
+        Returns:
+        dict: A dictionary with the current thresholds for weather parameters.
+        """
         return {
             'temp': self.temp,
             'feels_like': self.feels_like,
@@ -209,6 +295,17 @@ class Thresholds:
         }
     
     def update_thresholds(self, temp, feels_like, pressure, humidity, rain, clouds):
+        """
+        Update the thresholds.
+
+        Parameters:
+        temp (list): Temperature thresholds [min, max].
+        feels_like (list): Feels like temperature thresholds [min, max].
+        pressure (list): Pressure thresholds [min, max].
+        humidity (list): Humidity thresholds [min, max].
+        rain (list): Rain thresholds [min, max].
+        clouds (list): Clouds thresholds [min, max].
+        """
         self.temp = temp
         self.feels_like = feels_like 
         self.pressure = pressure 
