@@ -196,7 +196,8 @@ But realised it's not a system design question but had to implement the APIs ser
 requests. I would still go for the ideal way I would have designed such a system in an 
 interview, although I didn't get the time to implement it.
 
-![image](https://github.com/user-attachments/assets/c93cdabe-53a0-4be9-a414-ad14943fea18)
+![image](https://github.com/user-attachments/assets/616d168c-3d71-4857-8114-801b2b83a727)
+
 
 ### Feedback
 The assignment was a bit lengthy, it has many tricky parts which are easier said than done.
